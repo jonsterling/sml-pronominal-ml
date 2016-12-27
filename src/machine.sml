@@ -25,7 +25,6 @@ struct
 
   type exp = abt
 
-  type addr = Abt.metavariable
   type 'a closure = ('a, exp) Cl.closure
   datatype 'a slot = HOLE | DONE of 'a | AWAIT of 'a closure
   type 'a frame = 'a slot appview
