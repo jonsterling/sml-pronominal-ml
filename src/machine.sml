@@ -72,7 +72,7 @@ struct
      | O.SWAP (a, b) $ [_ \ m] => 
          SOME @@ m <: env |> (O.SWAP (a, b) `$ [([],[]) \ HOLE]) :: stk
      | O.SWAPREF $ [_ \ m1, _ \ m2, _ \ m3] => 
-         SOME @@ m1 <: env <| (O.PAIR `$ [([],[]) \ HOLE, ([],[]) \ AWAIT (m2 <: env), ([],[]) \ AWAIT (m3 <: env)]) :: stk
+         SOME @@ m1 <: env <| (O.SWAPREF `$ [([],[]) \ HOLE, ([],[]) \ AWAIT (m2 <: env), ([],[]) \ AWAIT (m3 <: env)]) :: stk
      | O.PM pat $ ((_ \ m) :: cases) =>
          SOME @@ m <: env <| (O.PM pat `$ ((([],[]) \ HOLE) :: List.map (fn bs \ m => bs \ AWAIT (m <: env)) cases)) :: stk
 
