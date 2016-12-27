@@ -73,6 +73,8 @@ struct
          SOME @@ m <: env |> (O.SWAP (a, b) `$ [([],[]) \ HOLE]) :: stk
      | O.SWAPREF $ [_ \ m1, _ \ m2, _ \ m3] => 
          SOME @@ m1 <: env <| (O.SWAPREF `$ [([],[]) \ HOLE, ([],[]) \ AWAIT (m2 <: env), ([],[]) \ AWAIT (m3 <: env)]) :: stk
+     | O.TESTREF $ [_ \ a, _ \ b, _ \ t, _ \ f] => 
+         SOME @@ a <: env <| (O.TESTREF `$ [([],[]) \ HOLE, ([],[]) \ AWAIT (b <: env), ([],[]) \ AWAIT (t <: env), ([],[]) \ AWAIT (f <: env)]) :: stk
      | O.PM pat $ ((_ \ m) :: cases) =>
          SOME @@ m <: env <| (O.PM pat `$ ((([],[]) \ HOLE) :: List.map (mapBind (fn m => AWAIT (m <: env))) cases)) :: stk
 
@@ -115,9 +117,19 @@ struct
          end
      | (_, (O.SWAPREF `$ [_ \ HOLE, _ \ AWAIT mcl1, _ \ AWAIT mcl2]) :: stk) =>
          SOME @@ mcl1 <| (O.SWAPREF `$ [([],[]) \ DONE v, ([],[]) \ HOLE, ([],[]) \ AWAIT mcl2]) :: stk
-     | (O.SYMREF a $ [], (O.SWAPREF `$ [_ \ DONE bref, _ \ HOLE, _ \ AWAIT (m <: envm)]) :: stk) =>
-         (case out bref of 
-             O.SYMREF b $ [] => SOME @@ (O.SWAP (a, b) $$ [([],[]) \ m]) <: envm <| stk
+     | (O.SYMREF b $ [], (O.SWAPREF `$ [_ \ DONE aref, _ \ HOLE, _ \ AWAIT (m <: envm)]) :: stk) =>
+         (case out aref of 
+             O.SYMREF a $ [] => SOME @@ (O.SWAP (a, b) $$ [([],[]) \ m]) <: envm <| stk
+           | _ => NONE)
+     | (_, (O.TESTREF `$ [_ \ HOLE, _ \ AWAIT bcl, _ \ AWAIT tcl, _ \ AWAIT fcl]) :: stk) =>
+         SOME @@ bcl <| (O.TESTREF `$ [([],[]) \ DONE v, ([],[]) \ HOLE, ([],[]) \ AWAIT tcl, ([],[]) \ AWAIT fcl]) :: stk
+     | (O.SYMREF b $ [], (O.TESTREF `$ [_ \ DONE aref, _ \ HOLE, _ \ AWAIT tcl, _ \ AWAIT fcl]) :: stk) =>
+         (case out aref of
+             O.SYMREF a $ [] => 
+               if Sym.eq (sym env a, sym env b) then 
+                 SOME @@ tcl <| stk
+               else
+                 SOME @@ fcl <| stk
            | _ => NONE)
 
      | (O.LAM $ [([],[x]) \ mx], (O.AP `$ [_ \ HOLE, _ \ AWAIT vcl]) :: stk) =>
