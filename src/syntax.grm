@@ -1,0 +1,41 @@
+open PmlAst
+structure Ast = PmlAst and O = PmlOperator
+
+%%
+%header (functor PmlLrValsFun (structure Token : TOKEN))
+
+%term
+   EOF
+ | OPNAME of string
+ | VARNAME of string
+ | NUMERAL of int
+ | LPAREN | RPAREN
+ | DOT | HASH
+ | LAMBDA
+ | FUN_APP
+
+%left FUN_APP
+
+%nonterm
+   start of ast
+ | term of ast
+ | atomicTerm of ast
+
+%verbose
+%pos (string -> Coord.t)
+%start start
+%eop EOF
+%noshift EOF
+%name Pml
+%arg (fileName) : string
+%%
+
+start : term (term)
+
+term
+  : term atomicTerm %prec FUN_APP (Ast.$$ (O.AP, [\ (([],[]), term), \ (([],[]), atomicTerm)]))
+  | atomicTerm (atomicTerm)
+
+atomicTerm
+  : LAMBDA VARNAME DOT term (Ast.$$ (O.LAM, [\ (([], [VARNAME]), term)]))
+  | LPAREN term RPAREN (term)

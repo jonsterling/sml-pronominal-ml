@@ -1,0 +1,11 @@
+Group is
+  $/ml-yacc-lib.cm
+  $/basis.cm
+  cmlib.cm
+  ../lib/sml-typed-abts/abt.cm (bind:(anchor:libs value:../lib))
+  ../lib/sml-typed-abts/abt-machine.cm (bind:(anchor:libs value:../lib))
+
+  syntax.sml
+  syntax.grm
+  syntax.lex
+  machine.sml

@@ -1,0 +1,5 @@
+Library
+  structure Pos
+  structure Coord
+is
+  ../lib/sml-typed-abts/lib/cmlib.cm

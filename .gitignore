@@ -1,0 +1,17 @@
+.cm
+*.out
+*.x86-darwin
+*.aux
+*.fdb_latexmk
+*.fls
+*.log
+*.toc
+*.bbl
+*.blg
+test/test
+*~
+*.grm.*
+*.lex.*
+bin
+\#*
+.#*
