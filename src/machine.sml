@@ -71,6 +71,8 @@ struct
          SOME @@ m <: env |> (O.NU `$ [([a],[]) \ HOLE]) :: stk
      | O.SWAP (a, b) $ [_ \ m] => 
          SOME @@ m <: env |> (O.SWAP (a, b) `$ [([],[]) \ HOLE]) :: stk
+     | O.SWAPREF $ [_ \ m1, _ \ m2, _ \ m3] => 
+         SOME @@ m1 <: env <| (O.PAIR `$ [([],[]) \ HOLE, ([],[]) \ AWAIT (m2 <: env), ([],[]) \ AWAIT (m3 <: env)]) :: stk
      | O.PM pat $ ((_ \ m) :: cases) =>
          SOME @@ m <: env <| (O.PM pat `$ ((([],[]) \ HOLE) :: List.map (fn bs \ m => bs \ AWAIT (m <: env)) cases)) :: stk
 
@@ -111,6 +113,12 @@ struct
          in
            SOME @@ th' $$ es' <: env <| stk
          end
+     | (_, (O.SWAPREF `$ [_ \ HOLE, _ \ AWAIT mcl1, _ \ AWAIT mcl2]) :: stk) =>
+         SOME @@ mcl1 <| (O.SWAPREF `$ [([],[]) \ DONE v, ([],[]) \ HOLE, ([],[]) \ AWAIT mcl2]) :: stk
+     | (O.SYMREF a $ [], (O.SWAPREF `$ [_ \ DONE bref, _ \ HOLE, _ \ AWAIT (m <: envm)]) :: stk) =>
+         (case out bref of 
+             O.SYMREF b $ [] => SOME @@ (O.SWAP (a, b) $$ [([],[]) \ m]) <: envm <| stk
+           | _ => NONE)
 
      | (O.LAM $ [([],[x]) \ mx], (O.AP `$ [_ \ HOLE, _ \ AWAIT vcl]) :: stk) =>
          SOME @@ mx <: insertVar env x vcl <| stk

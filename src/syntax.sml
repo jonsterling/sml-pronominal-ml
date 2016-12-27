@@ -49,7 +49,7 @@ sig
 
   datatype 'a operator = 
      PAIR | TT | INL | INR | SYMREF of 'a
-   | ABS | SWAP of 'a * 'a
+   | ABS | SWAP of 'a * 'a | SWAPREF
    | NU | LAM | AP
    | PM of pat
    | TENSOR | PLUS | FN | ONE | ATOM
@@ -68,7 +68,7 @@ struct
 
   datatype 'a operator = 
      PAIR | TT | INL | INR | SYMREF of 'a
-   | ABS | SWAP of 'a * 'a
+   | ABS | SWAP of 'a * 'a | SWAPREF
    | NU | LAM | AP
    | PM of pat
    | TENSOR | PLUS | FN | ONE | ATOM
@@ -86,6 +86,7 @@ struct
        | INL => [[] * [] <> EXP] ->> EXP
        | INR => [[] * [] <> EXP] ->> EXP
        | SYMREF _ => [] ->> EXP
+       | SWAPREF => [[] * [] <> EXP, [] * [] <> EXP, [] * [] <> EXP] ->> EXP
        | ABS => [[SYM] * [] <> EXP] ->> EXP
        | SWAP _ => [[] * [] <> EXP] ->> EXP
        | NU => [[SYM] * [] <> EXP] ->> EXP
@@ -121,6 +122,7 @@ struct
      | (SYMREF a, SYMREF b) => f (a, b)
      | (ABS, ABS) => true
      | (SWAP (a1, a2), SWAP (b1, b2)) => f (a1, b1) andalso f (a2, b2)
+     | (SWAPREF, SWAPREF) => true
      | (NU, NU) => true
      | (LAM, LAM) => true
      | (AP, AP) => true
@@ -130,6 +132,7 @@ struct
      | (FN, FN) => true
      | (ONE, ONE) => true
      | (ATOM, ATOM) => true
+     | _ => false
 
   fun toString f = 
     fn PAIR => "pair"
@@ -139,6 +142,7 @@ struct
      | SYMREF a => "&" ^ f a
      | ABS => "abs"
      | SWAP (a, b) => "{" ^ f a ^ " <-> " ^ f b ^ "}"
+     | SWAPREF => "swapref"
      | PM _ => "pm"
      | TENSOR => "tensor"
      | PLUS => "plus"
@@ -157,6 +161,7 @@ struct
       | SYMREF a => let val VAR a' = f a in SYMREF a' end
       | ABS => ABS
       | SWAP (a, b) => let val (VAR a', VAR b') = (f a, f b) in SWAP (a', b') end
+      | SWAPREF => SWAPREF
       | PM pat => PM pat
       | TENSOR => TENSOR
       | PLUS => PLUS
