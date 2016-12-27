@@ -2,20 +2,19 @@ signature PML_MACHINE =
 sig
   type 'a appview
 
-  type val_
-  type cmp
+  type exp
 
   type 'a closure
   datatype 'a slot = HOLE | DONE of 'a | AWAIT of 'a closure
   type 'a frame = 'a slot appview
   type 'a stack = 'a frame list
 
-  datatype cfg = 
-     <| of cmp closure * cmp stack
-   | |> of val_ closure * cmp stack
+  datatype ('a, 'k) cfg = 
+     <| of 'a closure * 'k stack
+   | |> of 'a closure * 'k stack
 
-  val init : cmp -> cfg
-  val step : cfg -> cfg option
+  val init : 'a -> ('a, 'k) cfg
+  val step : (exp, exp) cfg -> (exp, exp) cfg option
 end
 
 structure PmlMachine : PML_MACHINE =
@@ -24,18 +23,18 @@ struct
   open Cl PmlAbt
   structure O = PmlOperator and P = PmlParamTerm
 
-  type val_ = abt
-  type cmp = abt
+  type exp = abt
 
   type addr = Abt.metavariable
-  type 'a closure = ('a, 'a) Cl.closure
+  type 'a closure = ('a, exp) Cl.closure
   datatype 'a slot = HOLE | DONE of 'a | AWAIT of 'a closure
   type 'a frame = 'a slot appview
   type 'a stack = 'a frame list
 
-  datatype cfg = 
-     <| of cmp closure * cmp stack
-   | |> of val_ closure * cmp stack
+  datatype ('a, 'k) cfg = 
+     <| of 'a closure * 'k stack
+   | |> of 'a closure * 'k stack
+
 
   fun @@ (f, x) = f x
 
@@ -56,6 +55,8 @@ struct
   fun down (m, env, stk) =
     case out m of
        ` x => SOME @@ Var.Ctx.lookup (#terms env) x <| stk
+     | O.SYMREF a $ [] => 
+         SOME @@ O.SYMREF a $$ [] <: env |> stk
      | O.PAIR $ [_ \ m1, _ \ m2] =>
          SOME @@ m1 <: env <| (O.PAIR `$ [([],[]) \ HOLE, ([],[]) \ AWAIT (m2 <: env)]) :: stk
      | O.INL $ [_ \ m] => 
@@ -70,6 +71,8 @@ struct
          SOME @@ m <: env |> (O.NU `$ [([a],[]) \ HOLE]) :: stk
      | O.SWAP (a, b) $ [_ \ m] => 
          SOME @@ m <: env |> (O.SWAP (a, b) `$ [([],[]) \ HOLE]) :: stk
+     | O.PM pat $ ((_ \ m) :: cases) =>
+         SOME @@ m <: env <| (O.PM pat `$ ((([],[]) \ HOLE) :: List.map (fn bs \ m => bs \ AWAIT (m <: env)) cases)) :: stk
 
   fun up (v, env : abt closure Cl.env, stk) =
     case (out v, stk) of
@@ -120,7 +123,6 @@ struct
      | (O.INR $ [_ \ v], (O.PM O.PAT_PLUS `$ [_ \ HOLE, _, ([],[x]) \ AWAIT (m <: envm)]) :: stk) =>
          SOME @@ m <: insertVar envm x (v <: env) <| stk
 
-  
   val step = 
     fn m <: env <| stk => down (m, env, stk)
      | v <: env |> stk => up (v, env, stk)
