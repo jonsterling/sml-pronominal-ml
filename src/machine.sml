@@ -51,6 +51,7 @@ struct
     m <: {params = Sym.Ctx.empty, terms = Var.Ctx.empty} 
       <| []
 
+
   fun down (m, env, stk) =
     case out m of
        ` x => SOME @@ Var.Ctx.lookup (#terms env) x <| stk
@@ -66,14 +67,14 @@ struct
          SOME @@ m <: env |> stk
      | O.ABS $ [([a],[]) \ m] =>
          SOME @@ m <: env |> (O.ABS `$ [([a],[]) \ HOLE]) :: stk
-     | O.NU $ [([a],[]) \ m] => 
+     | O.NU $ [([a],[]) \ m] =>
          SOME @@ m <: env |> (O.NU `$ [([a],[]) \ HOLE]) :: stk
-     | O.SWAP (a, b) $ [_ \ m] => 
+     | O.SWAP (a, b) $ [_ \ m] =>
          SOME @@ m <: env |> (O.SWAP (a, b) `$ [([],[]) \ HOLE]) :: stk
      | O.SWAPREF $ [_ \ m1, _ \ m2, _ \ m3] => 
          SOME @@ m1 <: env <| (O.SWAPREF `$ [([],[]) \ HOLE, ([],[]) \ AWAIT (m2 <: env), ([],[]) \ AWAIT (m3 <: env)]) :: stk
      | O.PM pat $ ((_ \ m) :: cases) =>
-         SOME @@ m <: env <| (O.PM pat `$ ((([],[]) \ HOLE) :: List.map (fn bs \ m => bs \ AWAIT (m <: env)) cases)) :: stk
+         SOME @@ m <: env <| (O.PM pat `$ ((([],[]) \ HOLE) :: List.map (mapBind (fn m => AWAIT (m <: env))) cases)) :: stk
 
   fun up (v, env : abt closure Cl.env, stk) =
     case (out v, stk) of
@@ -95,7 +96,7 @@ struct
            if List.exists (fn (b,_) => Sym.eq (a, b)) supp then
              NONE
            else
-             SOME @@ th $$ (List.map (fn bs \ m => bs \ (O.NU $$ [([a],[]) \ m])) es) <: env <| stk
+             SOME @@ th $$ List.map (mapBind (fn m => O.NU $$ [([a],[]) \ m])) es <: env <| stk
          end
      | (th $ es, (O.SWAP (a, b) `$ [_ \ HOLE]) :: stk) =>
          let
@@ -108,7 +109,7 @@ struct
                if Sym.eq (c', a') then P.VAR b else if Sym.eq (c', b') then P.VAR a else P.VAR c
              end
            val th' = O.map rho th
-           val es' = List.map (fn bs \ m => bs \ (O.SWAP (a, b) $$ [([],[]) \ m])) es
+           val es' = List.map (mapBind (fn m => O.SWAP (a, b) $$ [([],[]) \ m])) es
          in
            SOME @@ th' $$ es' <: env <| stk
          end
