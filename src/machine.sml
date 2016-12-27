@@ -55,7 +55,8 @@ struct
 
   fun down (m, env, stk) =
     case out m of
-       O.PAIR $ [_ \ m1, _ \ m2] =>
+       ` x => SOME @@ Var.Ctx.lookup (#terms env) x <| stk
+     | O.PAIR $ [_ \ m1, _ \ m2] =>
          SOME @@ m1 <: env <| (O.PAIR `$ [([],[]) \ HOLE, ([],[]) \ AWAIT (m2 <: env)]) :: stk
      | O.INL $ [_ \ m] => 
          SOME @@ m <: env <| (O.INL `$ [([],[]) \ HOLE]) :: stk
@@ -72,8 +73,7 @@ struct
 
   fun up (v, env : abt closure Cl.env, stk) =
     case (out v, stk) of
-       (` x, _) => SOME @@ Var.Ctx.lookup (#terms env) x |> stk
-     | (_, []) => NONE
+       (_, []) => NONE
      | (_, (O.PAIR `$ [_ \ HOLE, _ \ AWAIT mcl]) :: stk) => 
          SOME @@ mcl <| (O.PAIR `$ [([],[]) \ DONE v, ([],[]) \ HOLE]) :: stk
      | (_, (O.PAIR `$ [_ \ DONE v1, _ \ HOLE]) :: stk) => 
