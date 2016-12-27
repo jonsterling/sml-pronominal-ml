@@ -47,7 +47,7 @@ struct
       a'
     end
 
-  fun init m = 
+  fun init m =
     m <: {params = Sym.Ctx.empty, terms = Var.Ctx.empty} 
       <| []
 

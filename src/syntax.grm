@@ -38,4 +38,5 @@ term
 
 atomicTerm
   : LAMBDA VARNAME DOT term (Ast.$$ (O.LAM, [\ (([], [VARNAME]), term)]))
+  | VARNAME (Ast.`` VARNAME)
   | LPAREN term RPAREN (term)
